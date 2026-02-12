@@ -1,0 +1,26 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+.terraform.lock.hcl
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+*.tfvars.local
+
+# Terragrunt
+.terragrunt-cache/
+
+# Terragrunt generate blocks が生成するファイル (modules/ 以外)
+aurora-mysql/*/variables.tf
+aurora-mysql/*/versions.tf
+aurora-mysql/*/terraform.tfvars
+rds-mysql-cluster/*/variables.tf
+rds-mysql-cluster/*/versions.tf
+rds-mysql-cluster/*/terraform.tfvars
+rds-mysql-instance/*/variables.tf
+rds-mysql-instance/*/versions.tf
+rds-mysql-instance/*/terraform.tfvars

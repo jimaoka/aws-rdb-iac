@@ -15,8 +15,7 @@ aws-rdb-iac/
 │   │   └── setup-terragrunt/   # Terraform/Terragrunt インストール
 │   │       └── action.yml
 │   └── scripts/
-│       ├── parse-labels.sh     # PR ラベルから対象ディレクトリ算出
-│       └── detect-changes.sh   # git diff ベース変更検出 (未使用、参考用)
+│       └── parse-labels.sh     # PR ラベルから対象ディレクトリ算出
 ├── modules/
 │   ├── aurora-mysql/           # Aurora MySQL モジュール
 │   │   ├── main.tf

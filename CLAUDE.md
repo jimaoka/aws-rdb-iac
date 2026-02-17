@@ -18,7 +18,6 @@ RDS MySQL / Aurora MySQL を管理する Terraform リポジトリ。
 - `.github/actions/setup-terragrunt/` - Terraform / Terragrunt インストール composite action
 - `.github/scripts/` - CI/CD 補助スクリプト
   - `parse-labels.sh` - PR ラベルから対象ディレクトリを算出
-  - `detect-changes.sh` - git diff ベースの変更検出（現在は未使用、参考用に残存）
 
 ## コーディング規約
 

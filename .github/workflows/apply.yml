@@ -1,0 +1,99 @@
+name: Terraform Apply
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: terraform-apply
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      modified: ${{ steps.detect.outputs.modified }}
+      deleted: ${{ steps.detect.outputs.deleted }}
+      has_modified: ${{ steps.detect.outputs.has_modified }}
+      has_deleted: ${{ steps.detect.outputs.has_deleted }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changes
+        id: detect
+        run: .github/scripts/detect-changes.sh "${{ github.event.before }}" "${{ github.sha }}"
+
+  destroy:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has_deleted == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        dir: ${{ fromJson(needs.detect-changes.outputs.deleted) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restore deleted directory
+        run: git checkout "${{ github.event.before }}" -- "${{ matrix.dir }}/"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ap-northeast-1
+
+      - name: Setup Terragrunt
+        uses: ./.github/actions/setup-terragrunt
+
+      - name: Terragrunt Init
+        working-directory: ${{ matrix.dir }}
+        run: terragrunt init --terragrunt-non-interactive -input=false
+
+      - name: Terragrunt Destroy
+        working-directory: ${{ matrix.dir }}
+        run: terragrunt destroy --terragrunt-non-interactive -auto-approve -input=false
+
+  apply:
+    needs: [detect-changes, destroy]
+    if: |
+      always() &&
+      needs.detect-changes.outputs.has_modified == 'true' &&
+      needs.destroy.result != 'failure'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        dir: ${{ fromJson(needs.detect-changes.outputs.modified) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ap-northeast-1
+
+      - name: Setup Terragrunt
+        uses: ./.github/actions/setup-terragrunt
+
+      - name: Terragrunt Init
+        working-directory: ${{ matrix.dir }}
+        run: terragrunt init --terragrunt-non-interactive -input=false
+
+      - name: Terragrunt Apply
+        working-directory: ${{ matrix.dir }}
+        run: terragrunt apply --terragrunt-non-interactive -auto-approve -input=false

@@ -5,8 +5,17 @@ RDS MySQL / Aurora MySQL を管理する Terraform リポジトリ。
 ## ディレクトリ構成
 
 ```
-jimaoka-db/
-├── root.hcl                    # 共通設定 (generate blocks で versions.tf / variables.tf を自動生成)
+aws-rdb-iac/
+├── root.hcl                    # 共通設定 (remote_state + generate blocks)
+├── .github/
+│   ├── workflows/
+│   │   ├── plan.yml            # PR 時: validate + plan
+│   │   └── apply.yml           # main マージ時: apply + destroy
+│   ├── actions/
+│   │   └── setup-terragrunt/   # Terraform/Terragrunt インストール
+│   │       └── action.yml
+│   └── scripts/
+│       └── detect-changes.sh   # 変更クラスタ検出
 ├── modules/
 │   ├── aurora-mysql/           # Aurora MySQL モジュール
 │   │   ├── main.tf
@@ -107,6 +116,12 @@ RDS MySQL Multi-AZ Instance (`aws_db_instance` + `multi_az=true`) を作成す�
 - VPC / サブネット情報が SSM Parameter Store (`/shared/dev/vpc/*`) に登録済みであること
 - DB サブネットグループが別リポジトリ (network-tf) で作成済みであること
 
+### CI/CD 用 (GitHub Actions)
+
+- GitHub Actions OIDC プロバイダーが AWS IAM に登録済みであること
+- IAM ロールが作成済みであること (trust policy: `repo:<owner>/<repo>:*`)
+- GitHub リポジトリ変数 `AWS_ROLE_ARN` にロール ARN が設定されていること
+
 ## 使い方
 
 ### 新しい DB インスタンスを追加する
@@ -202,7 +217,17 @@ module "<db-name>" {
 }
 ```
 
-4. 適用する
+4. PR を作成してマージする
+
+```bash
+git checkout -b add-<cluster-name>
+git add <engine>/<cluster-name>/
+git commit -m "Add <cluster-name>"
+git push origin add-<cluster-name>
+# PR を作成 → CI が自動で plan を実行 → レビュー後マージで apply が実行される
+```
+
+ローカルで手動実行する場合:
 
 ```bash
 cd <engine>/<cluster-name>
@@ -210,6 +235,42 @@ terragrunt init
 terragrunt plan
 terragrunt apply
 ```
+
+### DB を削除する
+
+1. 対象のクラスタディレクトリごと削除する
+
+```bash
+git checkout -b delete-<cluster-name>
+rm -rf <engine>/<cluster-name>
+git add -A
+git commit -m "Delete <cluster-name>"
+git push origin delete-<cluster-name>
+# PR を作成 → CI が plan -destroy を実行 → マージで destroy が実行される
+```
+
+## CI/CD
+
+GitHub Actions による PR ベースのワークフローで Terraform の変更を自動化している。
+
+### ワークフロー
+
+| ワークフロー | トリガー | 内容 |
+|-------------|---------|------|
+| `plan.yml` | PR to `main` | 変更検出 → validate + plan → PR コメント |
+| `apply.yml` | push to `main` | 変更検出 → destroy (削除分) → apply (変更分) |
+
+### 変更検出ロジック
+
+`.github/scripts/detect-changes.sh` が以下のロジックで変更対象を検出する:
+
+- `aurora-mysql/*/`、`rds-mysql-cluster/*/`、`rds-mysql-instance/*/` 配下のファイル変更 → 該当クラスタ
+- `modules/<engine>/` または `root.hcl` の変更 → 該当エンジンの全クラスタ
+- base ref に存在するが head ref に存在しないディレクトリ → 削除対象
+
+### AWS 認証
+
+OIDC を使用。リポジトリ変数 `AWS_ROLE_ARN` に IAM ロール ARN を設定する。
 
 ## 設計メモ
 

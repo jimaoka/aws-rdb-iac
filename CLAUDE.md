@@ -6,7 +6,7 @@ RDS MySQL / Aurora MySQL を管理する Terraform リポジトリ。
 
 ## ディレクトリ構成ルール
 
-- `root.hcl` - ルート Terragrunt 設定 (`generate` ブロックで `versions.tf` / `variables.tf` を自動生成)
+- `root.hcl` - ルート Terragrunt 設定 (`remote_state` で `backend.tf`、`generate` で `versions.tf` / `variables.tf` を自動生成)
 - `modules/` - 再利用可能な Terraform モジュール (直接 apply しない)
   - `aurora-mysql/` - Aurora MySQL モジュール
   - `rds-mysql-cluster/` - RDS MySQL Multi-AZ DB Cluster モジュール (`aws_rds_cluster`)
@@ -14,6 +14,9 @@ RDS MySQL / Aurora MySQL を管理する Terraform リポジトリ。
 - `aurora-mysql/<cluster-name>/` - Aurora MySQL の各クラスタ定義 (ここで `terragrunt apply`)
 - `rds-mysql-cluster/<cluster-name>/` - RDS MySQL Multi-AZ DB Cluster の各クラスタ定義 (ここで `terragrunt apply`)
 - `rds-mysql-instance/<db-name>/` - RDS MySQL Multi-AZ Instance の各インスタンス定義 (ここで `terragrunt apply`)
+- `.github/workflows/` - GitHub Actions CI/CD ワークフロー
+- `.github/actions/setup-terragrunt/` - Terraform / Terragrunt インストール composite action
+- `.github/scripts/` - CI/CD 補助スクリプト
 
 ## コーディング規約
 
@@ -37,13 +40,32 @@ DB サブネットグループは network-tf リポジトリで管理されて�
 
 ## Terragrunt 構成
 
-ルートの `root.hcl` が `generate` ブロックで `versions.tf` と `variables.tf` を各クラスタディレクトリに自動生成する。各クラスタディレクトリには `main.tf`（クラスタ固有）と `terragrunt.hcl`（`include` のみ）を配置する。`variables.tf` / `versions.tf` / `terraform.tfvars` を手動で作成・コピーする必要はない。
+ルートの `root.hcl` が以下を各クラスタディレクトリに自動生成する:
+- `backend.tf` - `remote_state` ブロックで生成。state key は `aws-rdb-iac/${path_relative_to_include()}/terraform.tfstate` でクラスタごとに一意
+- `versions.tf` - `generate "versions"` で生成 (`required_version`, `required_providers`, `provider`)
+- `variables.tf` - `generate "variables"` で生成 (`aws_region`, `environment`)
+
+各クラスタディレクトリには `main.tf`（クラスタ固有）と `terragrunt.hcl`（`include` のみ）を配置する。`variables.tf` / `versions.tf` / `backend.tf` / `terraform.tfvars` を手動で作成・コピーする必要はない。
 
 ## 新しい DB を追加する手順
 
 1. `aurora-mysql/<name>/`、`rds-mysql-cluster/<name>/`、または `rds-mysql-instance/<name>/` ディレクトリを作成
 2. `terragrunt.hcl` を作成（`include "root" { path = find_in_parent_folders("root.hcl") }` のみ）
 3. `main.tf` でモジュールを `source = "../../modules/aurora-mysql"` (または `rds-mysql-cluster` / `rds-mysql-instance`) で呼び出す
+4. PR を作成 → CI が自動で `terragrunt plan` を実行 → マージで `terragrunt apply` が実行される
+
+## DB を削除する手順
+
+1. 対象のクラスタディレクトリごと削除する PR を作成
+2. CI が `terragrunt plan -destroy` を実行し、PR コメントに破壊計画を表示
+3. マージで `terragrunt destroy` が自動実行される
+
+## CI/CD ワークフロー
+
+- **plan.yml** (PR 時): 変更検出 → `terragrunt validate` + `terragrunt plan` → 結果を PR コメントに投稿
+- **apply.yml** (main マージ時): 変更検出 → 削除クラスタの `terragrunt destroy` → 変更クラスタの `terragrunt apply`
+- 変更検出ロジック (`detect-changes.sh`): クラスタディレクトリ直接変更のほか、`modules/` や `root.hcl` の変更時は該当エンジンの全クラスタを対象にする
+- AWS 認証: OIDC (`vars.AWS_ROLE_ARN`)
 
 ## 検証コマンド
 

@@ -59,11 +59,11 @@ jobs:
 
       - name: Terragrunt Init
         working-directory: ${{ matrix.dir }}
-        run: terragrunt init -input=false
+        run: terragrunt init --terragrunt-non-interactive -input=false
 
       - name: Terragrunt Destroy
         working-directory: ${{ matrix.dir }}
-        run: terragrunt destroy -auto-approve -input=false
+        run: terragrunt destroy --terragrunt-non-interactive -auto-approve -input=false
 
   apply:
     needs: [detect-changes, destroy]
@@ -92,8 +92,8 @@ jobs:
 
       - name: Terragrunt Init
         working-directory: ${{ matrix.dir }}
-        run: terragrunt init -input=false
+        run: terragrunt init --terragrunt-non-interactive -input=false
 
       - name: Terragrunt Apply
         working-directory: ${{ matrix.dir }}
-        run: terragrunt apply -auto-approve -input=false
+        run: terragrunt apply --terragrunt-non-interactive -auto-approve -input=false

@@ -5,11 +5,12 @@ remote_state {
     if_exists = "overwrite_terragrunt"
   }
   config = {
-    bucket         = "tfstate-ny3mq4w6"
-    dynamodb_table = "terraform-lock"
-    key            = "aws-rdb-iac/${path_relative_to_include()}/terraform.tfstate"
-    region         = "ap-northeast-1"
-    encrypt        = true
+    bucket                = "tfstate-ny3mq4w6"
+    dynamodb_table        = "terraform-lock"
+    key                   = "aws-rdb-iac/${path_relative_to_include()}/terraform.tfstate"
+    region                = "ap-northeast-1"
+    encrypt               = true
+    disable_bucket_update = true
   }
 }
 

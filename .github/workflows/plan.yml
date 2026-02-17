@@ -55,17 +55,17 @@ jobs:
 
       - name: Terragrunt Init
         working-directory: ${{ matrix.dir }}
-        run: terragrunt init -input=false
+        run: terragrunt init --terragrunt-non-interactive -input=false
 
       - name: Terragrunt Validate
         working-directory: ${{ matrix.dir }}
-        run: terragrunt validate
+        run: terragrunt validate --terragrunt-non-interactive
 
       - name: Terragrunt Plan
         id: plan
         working-directory: ${{ matrix.dir }}
         run: |
-          terragrunt plan -input=false -no-color 2>&1 | tee plan_output.txt
+          terragrunt plan --terragrunt-non-interactive -input=false -no-color 2>&1 | tee plan_output.txt
           echo "exitcode=${PIPESTATUS[0]}" >> "${GITHUB_OUTPUT}"
 
       - name: Post plan to PR
@@ -153,13 +153,13 @@ jobs:
 
       - name: Terragrunt Init
         working-directory: ${{ matrix.dir }}
-        run: terragrunt init -input=false
+        run: terragrunt init --terragrunt-non-interactive -input=false
 
       - name: Terragrunt Plan Destroy
         id: plan
         working-directory: ${{ matrix.dir }}
         run: |
-          terragrunt plan -destroy -input=false -no-color 2>&1 | tee plan_output.txt
+          terragrunt plan --terragrunt-non-interactive -destroy -input=false -no-color 2>&1 | tee plan_output.txt
           echo "exitcode=${PIPESTATUS[0]}" >> "${GITHUB_OUTPUT}"
 
       - name: Post destroy plan to PR

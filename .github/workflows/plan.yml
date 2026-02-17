@@ -18,16 +18,14 @@ jobs:
   detect-targets:
     runs-on: ubuntu-latest
     outputs:
-      modified: ${{ steps.result.outputs.modified }}
-      deleted: ${{ steps.result.outputs.deleted }}
-      has_modified: ${{ steps.result.outputs.has_modified }}
-      has_deleted: ${{ steps.result.outputs.has_deleted }}
+      modified: ${{ steps.labels.outputs.modified }}
+      deleted: ${{ steps.labels.outputs.deleted }}
+      has_modified: ${{ steps.labels.outputs.has_modified }}
+      has_deleted: ${{ steps.labels.outputs.has_deleted }}
       is_labeled: ${{ steps.labels.outputs.has_labels }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Parse PR labels
         id: labels
@@ -36,26 +34,6 @@ jobs:
           .github/scripts/parse-labels.sh "${LABELS_JSON}"
         env:
           GH_TOKEN: ${{ github.token }}
-
-      - name: Fallback to detect-changes
-        id: detect
-        if: steps.labels.outputs.has_labels != 'true'
-        run: .github/scripts/detect-changes.sh "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
-
-      - name: Set outputs
-        id: result
-        run: |
-          if [[ "${{ steps.labels.outputs.has_labels }}" == "true" ]]; then
-            echo "modified=${{ steps.labels.outputs.modified }}" >> "${GITHUB_OUTPUT}"
-            echo "deleted=${{ steps.labels.outputs.deleted }}" >> "${GITHUB_OUTPUT}"
-            echo "has_modified=${{ steps.labels.outputs.has_modified }}" >> "${GITHUB_OUTPUT}"
-            echo "has_deleted=${{ steps.labels.outputs.has_deleted }}" >> "${GITHUB_OUTPUT}"
-          else
-            echo "modified=${{ steps.detect.outputs.modified }}" >> "${GITHUB_OUTPUT}"
-            echo "deleted=${{ steps.detect.outputs.deleted }}" >> "${GITHUB_OUTPUT}"
-            echo "has_modified=${{ steps.detect.outputs.has_modified }}" >> "${GITHUB_OUTPUT}"
-            echo "has_deleted=${{ steps.detect.outputs.has_deleted }}" >> "${GITHUB_OUTPUT}"
-          fi
 
   plan:
     needs: detect-targets

@@ -15,8 +15,8 @@ aws-rdb-iac/
 │   │   └── setup-terragrunt/   # Terraform/Terragrunt インストール
 │   │       └── action.yml
 │   └── scripts/
-│       ├── detect-changes.sh   # git diff ベース変更検出 (フォールバック)
-│       └── parse-labels.sh     # PR ラベルから対象ディレクトリ算出
+│       ├── parse-labels.sh     # PR ラベルから対象ディレクトリ算出
+│       └── detect-changes.sh   # git diff ベース変更検出 (未使用、参考用)
 ├── modules/
 │   ├── aurora-mysql/           # Aurora MySQL モジュール
 │   │   ├── main.tf
@@ -261,32 +261,20 @@ GitHub Actions による PR ベースのワークフローで Terraform の変�
 | `plan.yml` | PR to `main` (opened / synchronize / reopened / labeled) | 変更対象検出 → validate + plan → PR コメント → ラベル付き PR は自動マージ |
 | `apply.yml` | push to `main` | 変更対象検出 → destroy (削除分) → apply (変更分) |
 
-### 変更対象の検出
+### 変更対象の検出 (ラベルベース)
 
-変更対象の検出はラベルベースを優先し、ラベルがない場合は git diff にフォールバックする。
-
-#### 1. ラベルベース (`parse-labels.sh`)
-
-PR に以下のラベルが両方付与されている場合、ラベルから対象ディレクトリを算出する:
+PR に以下のラベルが両方付与されている場合のみ、ラベルから対象ディレクトリを算出して plan / apply を実行する:
 
 - `type:<engine>` — エンジン名 (`aurora-mysql` / `rds-mysql-cluster` / `rds-mysql-instance`)
 - `cluster:<name>` — クラスタ / インスタンス名
 
 例: `type:rds-mysql-instance` + `cluster:rds-instance-test001` → `rds-mysql-instance/rds-instance-test001`
 
-外部構成管理ツールからの自動 PR はこのパスを通る。
-
-#### 2. git diff フォールバック (`detect-changes.sh`)
-
-ラベルがない PR（手動編集、モジュール変更など）は従来の git diff ベースで検出する:
-
-- `aurora-mysql/*/`、`rds-mysql-cluster/*/`、`rds-mysql-instance/*/` 配下のファイル変更 → 該当クラスタ
-- `modules/<engine>/` または `root.hcl` の変更 → 該当エンジンの全クラスタ
-- base ref に存在するが head ref に存在しないディレクトリ → 削除対象
+ラベルがない PR は plan / apply を実行しない。
 
 ### 自動マージ
 
-`type:*` と `cluster:*` ラベルが付いた PR は、すべてのチェック（plan）が成功した後に `gh pr merge --squash --auto` で自動マージされる。ラベルなしの PR は自動マージされず、手動レビュー＋マージが必要。
+`type:*` と `cluster:*` ラベルが付いた PR は、すべてのチェック（plan）が成功した後に `gh pr merge --squash --auto` で自動マージされる。ラベルなしの PR は plan / apply / 自動マージいずれも実行されない。
 
 **リポジトリ設定の前提条件:**
 

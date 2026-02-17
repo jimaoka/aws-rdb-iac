@@ -17,8 +17,8 @@ RDS MySQL / Aurora MySQL を管理する Terraform リポジトリ。
 - `.github/workflows/` - GitHub Actions CI/CD ワークフロー
 - `.github/actions/setup-terragrunt/` - Terraform / Terragrunt インストール composite action
 - `.github/scripts/` - CI/CD 補助スクリプト
-  - `detect-changes.sh` - git diff ベースの変更検出（ラベルなし PR 用フォールバック）
   - `parse-labels.sh` - PR ラベルから対象ディレクトリを算出
+  - `detect-changes.sh` - git diff ベースの変更検出（現在は未使用、参考用に残存）
 
 ## コーディング規約
 
@@ -68,15 +68,15 @@ DB サブネットグループは network-tf リポジトリで管理されて�
 - **apply.yml** (main マージ時): 変更対象検出 → 削除クラスタの `terragrunt destroy` → 変更クラスタの `terragrunt apply`
 - AWS 認証: OIDC (`vars.AWS_ROLE_ARN`)
 
-### 変更対象の検出 (ラベルベース + git diff フォールバック)
+### 変更対象の検出 (ラベルベース)
 
-1. **ラベルベース** (`parse-labels.sh`): PR に `type:<engine>` と `cluster:<name>` ラベルが付与されている場合、ラベルから対象ディレクトリを算出する。外部構成管理ツールからの自動 PR はこのパスを通る
-2. **git diff フォールバック** (`detect-changes.sh`): ラベルがない場合は従来どおり git diff で変更を検出する。モジュール変更・手動編集 PR はこのパスを通る
+- PR に `type:<engine>` と `cluster:<name>` ラベルが両方付与されている場合のみ、ラベルから対象ディレクトリを算出して plan / apply を実行する
+- ラベルがない PR は plan / apply を実行しない（何も行わない）
 
 ### 自動マージ
 
 - `type:*` + `cluster:*` ラベルが付いた PR は、plan 成功後に `gh pr merge --squash --auto` で自動マージされる
-- ラベルなし PR は自動マージされない（手動レビュー＋マージが必要）
+- ラベルなし PR は plan / apply / 自動マージいずれも実行されない
 - 前提: リポジトリ設定で **"Allow auto-merge"** を有効にし、ブランチ保護ルールで `summary` を required status check に設定する
 
 ## 検証コマンド

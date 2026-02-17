@@ -6,7 +6,7 @@ module "rds-instance-test001" {
   region               = var.aws_region
   instance_class       = "db.t4g.medium"
   engine_version       = "8.4.8"
-  read_replica_count   = 3
+  read_replica_count   = 1
   deletion_protection  = false
 
   storage_type      = "gp2"

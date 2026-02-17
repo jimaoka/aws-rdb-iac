@@ -17,6 +17,8 @@ RDS MySQL / Aurora MySQL を管理する Terraform リポジトリ。
 - `.github/workflows/` - GitHub Actions CI/CD ワークフロー
 - `.github/actions/setup-terragrunt/` - Terraform / Terragrunt インストール composite action
 - `.github/scripts/` - CI/CD 補助スクリプト
+  - `detect-changes.sh` - git diff ベースの変更検出（ラベルなし PR 用フォールバック）
+  - `parse-labels.sh` - PR ラベルから対象ディレクトリを算出
 
 ## コーディング規約
 
@@ -62,10 +64,20 @@ DB サブネットグループは network-tf リポジトリで管理されて�
 
 ## CI/CD ワークフロー
 
-- **plan.yml** (PR 時): 変更検出 → `terragrunt validate` + `terragrunt plan` → 結果を PR コメントに投稿
-- **apply.yml** (main マージ時): 変更検出 → 削除クラスタの `terragrunt destroy` → 変更クラスタの `terragrunt apply`
-- 変更検出ロジック (`detect-changes.sh`): クラスタディレクトリ直接変更のほか、`modules/` や `root.hcl` の変更時は該当エンジンの全クラスタを対象にする
+- **plan.yml** (PR 時): 変更対象検出 → `terragrunt validate` + `terragrunt plan` → 結果を PR コメントに投稿 → ラベル付き PR は plan 成功後に自動マージ
+- **apply.yml** (main マージ時): 変更対象検出 → 削除クラスタの `terragrunt destroy` → 変更クラスタの `terragrunt apply`
 - AWS 認証: OIDC (`vars.AWS_ROLE_ARN`)
+
+### 変更対象の検出 (ラベルベース + git diff フォールバック)
+
+1. **ラベルベース** (`parse-labels.sh`): PR に `type:<engine>` と `cluster:<name>` ラベルが付与されている場合、ラベルから対象ディレクトリを算出する。外部構成管理ツールからの自動 PR はこのパスを通る
+2. **git diff フォールバック** (`detect-changes.sh`): ラベルがない場合は従来どおり git diff で変更を検出する。モジュール変更・手動編集 PR はこのパスを通る
+
+### 自動マージ
+
+- `type:*` + `cluster:*` ラベルが付いた PR は、plan 成功後に `gh pr merge --squash --auto` で自動マージされる
+- ラベルなし PR は自動マージされない（手動レビュー＋マージが必要）
+- 前提: リポジトリ設定で **"Allow auto-merge"** を有効にし、ブランチ保護ルールで `summary` を required status check に設定する
 
 ## 検証コマンド
 

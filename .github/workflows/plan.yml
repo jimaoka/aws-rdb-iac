@@ -3,7 +3,7 @@ name: Terraform Plan
 on:
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, labeled]
 
 concurrency:
   group: terraform-${{ github.event.pull_request.number }}
@@ -11,35 +11,60 @@ concurrency:
 
 permissions:
   id-token: write
-  contents: read
+  contents: write
   pull-requests: write
 
 jobs:
-  detect-changes:
+  detect-targets:
     runs-on: ubuntu-latest
     outputs:
-      modified: ${{ steps.detect.outputs.modified }}
-      deleted: ${{ steps.detect.outputs.deleted }}
-      has_modified: ${{ steps.detect.outputs.has_modified }}
-      has_deleted: ${{ steps.detect.outputs.has_deleted }}
+      modified: ${{ steps.result.outputs.modified }}
+      deleted: ${{ steps.result.outputs.deleted }}
+      has_modified: ${{ steps.result.outputs.has_modified }}
+      has_deleted: ${{ steps.result.outputs.has_deleted }}
+      is_labeled: ${{ steps.labels.outputs.has_labels }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Detect changes
+      - name: Parse PR labels
+        id: labels
+        run: |
+          LABELS_JSON=$(gh pr view "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}" --json labels --jq '[.labels[].name]')
+          .github/scripts/parse-labels.sh "${LABELS_JSON}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Fallback to detect-changes
         id: detect
+        if: steps.labels.outputs.has_labels != 'true'
         run: .github/scripts/detect-changes.sh "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
 
+      - name: Set outputs
+        id: result
+        run: |
+          if [[ "${{ steps.labels.outputs.has_labels }}" == "true" ]]; then
+            echo "modified=${{ steps.labels.outputs.modified }}" >> "${GITHUB_OUTPUT}"
+            echo "deleted=${{ steps.labels.outputs.deleted }}" >> "${GITHUB_OUTPUT}"
+            echo "has_modified=${{ steps.labels.outputs.has_modified }}" >> "${GITHUB_OUTPUT}"
+            echo "has_deleted=${{ steps.labels.outputs.has_deleted }}" >> "${GITHUB_OUTPUT}"
+          else
+            echo "modified=${{ steps.detect.outputs.modified }}" >> "${GITHUB_OUTPUT}"
+            echo "deleted=${{ steps.detect.outputs.deleted }}" >> "${GITHUB_OUTPUT}"
+            echo "has_modified=${{ steps.detect.outputs.has_modified }}" >> "${GITHUB_OUTPUT}"
+            echo "has_deleted=${{ steps.detect.outputs.has_deleted }}" >> "${GITHUB_OUTPUT}"
+          fi
+
   plan:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.has_modified == 'true'
+    needs: detect-targets
+    if: needs.detect-targets.outputs.has_modified == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        dir: ${{ fromJson(needs.detect-changes.outputs.modified) }}
+        dir: ${{ fromJson(needs.detect-targets.outputs.modified) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -132,13 +157,13 @@ jobs:
             }
 
   plan-destroy:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.has_deleted == 'true'
+    needs: detect-targets
+    if: needs.detect-targets.outputs.has_deleted == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        dir: ${{ fromJson(needs.detect-changes.outputs.deleted) }}
+        dir: ${{ fromJson(needs.detect-targets.outputs.deleted) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -233,13 +258,13 @@ jobs:
             }
 
   summary:
-    needs: [detect-changes, plan, plan-destroy]
+    needs: [detect-targets, plan, plan-destroy]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Check job results
         run: |
-          results=("${{ needs.detect-changes.result }}" "${{ needs.plan.result }}" "${{ needs.plan-destroy.result }}")
+          results=("${{ needs.detect-targets.result }}" "${{ needs.plan.result }}" "${{ needs.plan-destroy.result }}")
           for result in "${results[@]}"; do
             if [[ "${result}" == "failure" ]]; then
               echo "::error::One or more jobs failed"
@@ -247,3 +272,19 @@ jobs:
             fi
           done
           echo "All jobs passed successfully"
+
+  auto-merge:
+    needs: [detect-targets, summary]
+    if: >-
+      always() &&
+      needs.summary.result == 'success' &&
+      needs.detect-targets.outputs.is_labeled == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto-merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr merge ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --squash --auto

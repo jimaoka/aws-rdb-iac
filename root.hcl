@@ -1,3 +1,18 @@
+remote_state {
+  backend = "s3"
+  generate = {
+    path      = "backend.tf"
+    if_exists = "overwrite_terragrunt"
+  }
+  config = {
+    bucket         = "tfstate-ny3mq4w6"
+    dynamodb_table = "terraform-lock"
+    key            = "aws-rdb-iac/${path_relative_to_include()}/terraform.tfstate"
+    region         = "ap-northeast-1"
+    encrypt        = true
+  }
+}
+
 generate "versions" {
   path      = "versions.tf"
   if_exists = "overwrite_terragrunt"
@@ -10,14 +25,6 @@ generate "versions" {
           source  = "hashicorp/aws"
           version = "~> 5.0"
         }
-      }
-
-      backend "s3" {
-        bucket         = "tfstate-ny3mq4w6"
-        dynamodb_table = "terraform-lock"
-        key            = "aws-rdb-iac/terraform.tfstate"
-        region         = "ap-northeast-1"
-        encrypt        = true
       }
     }
 
@@ -32,10 +39,6 @@ generate "versions" {
       }
     }
   EOF
-}
-
-terraform {
-
 }
 
 generate "variables" {

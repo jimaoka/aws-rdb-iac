@@ -17,10 +17,13 @@ override.tf.json
 # Terragrunt generate blocks が生成するファイル (modules/ 以外)
 aurora-mysql/*/variables.tf
 aurora-mysql/*/versions.tf
+aurora-mysql/*/backend.tf
 aurora-mysql/*/terraform.tfvars
 rds-mysql-cluster/*/variables.tf
 rds-mysql-cluster/*/versions.tf
+rds-mysql-cluster/*/backend.tf
 rds-mysql-cluster/*/terraform.tfvars
 rds-mysql-instance/*/variables.tf
 rds-mysql-instance/*/versions.tf
+rds-mysql-instance/*/backend.tf
 rds-mysql-instance/*/terraform.tfvars

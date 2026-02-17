@@ -78,7 +78,7 @@ resource "aws_db_instance" "this" {
   deletion_protection       = var.deletion_protection
   copy_tags_to_snapshot     = true
   skip_final_snapshot       = var.skip_final_snapshot
-  final_snapshot_identifier = var.skip_final_snapshot ? null : "${var.db_identifier}-final-snapshot"
+  final_snapshot_identifier = var.skip_final_snapshot ? null : "${var.db_identifier}-final-${formatdate("YYYYMMDDHHmmss", timestamp())}"
 
   backup_retention_period = var.backup_retention_period
   backup_window           = var.preferred_backup_window
@@ -86,6 +86,10 @@ resource "aws_db_instance" "this" {
 
   tags = {
     Name = var.db_identifier
+  }
+
+  lifecycle {
+    ignore_changes = [final_snapshot_identifier]
   }
 }
 

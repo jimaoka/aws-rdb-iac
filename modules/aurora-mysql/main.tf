@@ -63,7 +63,7 @@ resource "aws_rds_cluster" "this" {
   deletion_protection      = var.deletion_protection
   copy_tags_to_snapshot    = true
   skip_final_snapshot      = var.skip_final_snapshot
-  final_snapshot_identifier = var.skip_final_snapshot ? null : "${var.cluster_identifier}-final-snapshot"
+  final_snapshot_identifier = var.skip_final_snapshot ? null : "${var.cluster_identifier}-final-${formatdate("YYYYMMDDHHmmss", timestamp())}"
 
   backup_retention_period      = var.backup_retention_period
   preferred_backup_window      = var.preferred_backup_window
@@ -72,6 +72,10 @@ resource "aws_rds_cluster" "this" {
 
   tags = {
     Name = var.cluster_identifier
+  }
+
+  lifecycle {
+    ignore_changes = [final_snapshot_identifier]
   }
 }
 

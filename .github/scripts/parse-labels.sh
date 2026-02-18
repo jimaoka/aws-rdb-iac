@@ -58,18 +58,31 @@ fi
 
 # ---------- build target directory ----------
 target_dir="${engine}/${cluster}"
-modified_json="[\"${target_dir}\"]"
+
+# ---------- detect create/modify vs delete ----------
+if [[ -d "${target_dir}" ]]; then
+  modified_json="[\"${target_dir}\"]"
+  deleted_json="[]"
+  has_modified="true"
+  has_deleted="false"
+else
+  modified_json="[]"
+  deleted_json="[\"${target_dir}\"]"
+  has_modified="false"
+  has_deleted="true"
+fi
 
 # ---------- output ----------
 echo "has_labels=true" >> "${GITHUB_OUTPUT}"
 echo "modified=${modified_json}" >> "${GITHUB_OUTPUT}"
-echo "deleted=[]" >> "${GITHUB_OUTPUT}"
-echo "has_modified=true" >> "${GITHUB_OUTPUT}"
-echo "has_deleted=false" >> "${GITHUB_OUTPUT}"
+echo "deleted=${deleted_json}" >> "${GITHUB_OUTPUT}"
+echo "has_modified=${has_modified}" >> "${GITHUB_OUTPUT}"
+echo "has_deleted=${has_deleted}" >> "${GITHUB_OUTPUT}"
 
 echo "::group::Label parsing"
 echo "Engine:  ${engine}"
 echo "Cluster: ${cluster}"
 echo "Target:  ${target_dir}"
 echo "Modified: ${modified_json}"
+echo "Deleted:  ${deleted_json}"
 echo "::endgroup::"

@@ -27,7 +27,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Sleep 5s
+      - name: Wait for this PR is labeled
         run: sleep 5
 
       - name: Parse PR labels

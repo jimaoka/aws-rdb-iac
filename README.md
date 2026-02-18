@@ -256,7 +256,7 @@ GitHub Actions による PR ベースのワークフローで Terraform の変�
 
 | ワークフロー | トリガー | 内容 |
 |-------------|---------|------|
-| `plan.yml` | PR to `main` (opened / synchronize / reopened / labeled) | 変更対象検出 → validate + plan (変更分) / plan -destroy (削除分) → apply → summary → ラベル付き PR は自動マージ |
+| `plan.yml` | PR to `main` (opened / synchronize / reopened / labeled) | 変更対象検出 → validate + plan (変更分) / plan -destroy (削除分) → apply (変更分) / destroy (削除分) → summary → ラベル付き PR は自動マージ |
 
 ### 変更対象の検出 (ラベルベース)
 
@@ -271,7 +271,7 @@ PR に以下のラベルが両方付与されている場合のみ、ラベル�
 
 ### 自動マージ
 
-`type:*` と `cluster:*` ラベルが付いた PR は、すべてのチェック（plan）が成功した後に `gh pr merge --squash --auto` で自動マージされる。ラベルなしの PR は plan / apply / 自動マージいずれも実行されない。
+`type:*` と `cluster:*` ラベルが付いた PR は、すべてのチェック（plan → apply / destroy）が成功した後に `gh pr merge --squash --auto` で自動マージされる。ラベルなしの PR は plan / apply / destroy / 自動マージいずれも実行されない。
 
 **リポジトリ設定の前提条件:**
 

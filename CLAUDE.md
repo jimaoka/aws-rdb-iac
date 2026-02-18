@@ -53,18 +53,17 @@ DB サブネットグループは network-tf リポジトリで管理されて�
 1. `aurora-mysql/<name>/`、`rds-mysql-cluster/<name>/`、または `rds-mysql-instance/<name>/` ディレクトリを作成
 2. `terragrunt.hcl` を作成（`include "root" { path = find_in_parent_folders("root.hcl") }` のみ）
 3. `main.tf` でモジュールを `source = "../../modules/aurora-mysql"` (または `rds-mysql-cluster` / `rds-mysql-instance`) で呼び出す
-4. PR を作成 → CI が自動で `terragrunt plan` を実行 → マージで `terragrunt apply` が実行される
+4. PR を作成 → CI が自動で `terragrunt plan` → `terragrunt apply` → 自動マージを実行
 
 ## DB を削除する手順
 
 1. 対象のクラスタディレクトリごと削除する PR を作成
 2. CI が `terragrunt plan -destroy` を実行し、PR コメントに破壊計画を表示
-3. マージで `terragrunt destroy` が自動実行される
+3. plan 成功後、ラベル付き PR は自動マージされる
 
 ## CI/CD ワークフロー
 
-- **plan.yml** (PR 時): 変更対象検出 → `terragrunt validate` + `terragrunt plan` → 結果を PR コメントに投稿 → ラベル付き PR は plan 成功後に自動マージ
-- **apply.yml** (main マージ時): 変更対象検出 → 削除クラスタの `terragrunt destroy` → 変更クラスタの `terragrunt apply`
+- **plan.yml** (PR 時): 変更対象検出 → `terragrunt validate` + `terragrunt plan` → ラベル付き PR は `terragrunt apply` → `summary` → 自動マージ
 - AWS 認証: OIDC (`vars.AWS_ROLE_ARN`)
 
 ### 変更対象の検出 (ラベルベース)
@@ -74,7 +73,7 @@ DB サブネットグループは network-tf リポジトリで管理されて�
 
 ### 自動マージ
 
-- `type:*` + `cluster:*` ラベルが付いた PR は、plan 成功後に `gh pr merge --squash --auto` で自動マージされる
+- `type:*` + `cluster:*` ラベルが付いた PR は、plan → apply 成功後に `gh pr merge --squash --auto` で自動マージされる
 - ラベルなし PR は plan / apply / 自動マージいずれも実行されない
 - 前提: リポジトリ設定で **"Allow auto-merge"** を有効にし、ブランチ保護ルールで `summary` を required status check に設定する
 

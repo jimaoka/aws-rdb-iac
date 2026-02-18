@@ -3,7 +3,7 @@ name: Terraform Plan
 on:
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened, labeled]
+    types: [labeled]
 
 concurrency:
   group: terraform-${{ github.event.pull_request.number }}
@@ -27,6 +27,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+
       - name: Parse PR labels
         id: labels
         run: |
@@ -34,10 +39,6 @@ jobs:
           .github/scripts/parse-labels.sh "${LABELS_JSON}"
         env:
           GH_TOKEN: ${{ github.token }}
-
-      - name: Sleep 10s
-        run: |
-          sleep 10
 
   plan:
     needs: detect-targets

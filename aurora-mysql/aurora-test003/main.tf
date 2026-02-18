@@ -7,7 +7,7 @@ module "aurora-test003" {
   db_cluster_instance_class = "db.t4g.medium"
   engine_version            = "8.0.mysql_aurora.3.10.3"
   read_replica_count        = 0
-  deletion_protection       = true
+  deletion_protection       = false
 
   backup_retention_period      = 1
   preferred_backup_window      = "18:00-19:00"

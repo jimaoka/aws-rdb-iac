@@ -74,7 +74,7 @@ DB サブネットグループは network-tf リポジトリで管理されて�
 
 ### 自動マージ
 
-- `type:*` + `cluster:*` ラベルが付いた PR は、plan → apply (または plan-destroy → destroy) 成功後に `gh pr merge --squash --auto --delete-branch` で自動マージ・ブランチ削除される
+- `type:*` + `cluster:*` ラベルが付いた PR は、plan → apply (または plan-destroy → destroy) 成功後に `gh pr merge --squash --auto` で自動マージされ、マージ完了後にブランチを明示的に削除する
 - ラベルなし PR は plan / apply / destroy / 自動マージいずれも実行されない
 - 前提: リポジトリ設定で **"Allow auto-merge"** を有効にし、ブランチ保護ルールで `summary` を required status check に設定する
 

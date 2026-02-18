@@ -334,4 +334,4 @@ jobs:
         run: |
           gh pr merge ${{ github.event.pull_request.number }} \
             --repo ${{ github.repository }} \
-            --squash --auto --delete-branch
+            --squash --delete-branch

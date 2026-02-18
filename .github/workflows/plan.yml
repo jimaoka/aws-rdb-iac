@@ -327,4 +327,31 @@ jobs:
         run: |
           gh pr merge ${{ github.event.pull_request.number }} \
             --repo ${{ github.repository }} \
-            --squash --auto --delete-branch
+            --squash --auto
+
+  delete-branch:
+    needs: [detect-targets, summary]
+    if: >-
+      always() &&
+      needs.summary.result == 'success' &&
+      needs.detect-targets.outputs.is_labeled == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for merge and delete branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for i in $(seq 1 30); do
+            sleep 2
+            STATE=$(gh pr view ${{ github.event.pull_request.number }} \
+              --repo ${{ github.repository }} --json state --jq '.state')
+            if [ "${STATE}" = "MERGED" ]; then
+              echo "PR merged. Deleting branch..."
+              gh api -X DELETE \
+                "repos/${{ github.repository }}/git/refs/heads/${{ github.head_ref }}" \
+                2>/dev/null || true
+              echo "Branch ${{ github.head_ref }} deleted."
+              exit 0
+            fi
+          done
+          echo "::warning::Timed out waiting for merge. Branch may need manual deletion."

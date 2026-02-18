@@ -9,8 +9,7 @@ aws-rdb-iac/
 ├── root.hcl                    # 共通設定 (remote_state + generate blocks)
 ├── .github/
 │   ├── workflows/
-│   │   ├── plan.yml            # PR 時: validate + plan
-│   │   └── apply.yml           # main マージ時: apply + destroy
+│   │   └── plan.yml            # PR 時: validate + plan + apply + auto-merge
 │   ├── actions/
 │   │   └── setup-terragrunt/   # Terraform/Terragrunt インストール
 │   │       └── action.yml
@@ -257,8 +256,7 @@ GitHub Actions による PR ベースのワークフローで Terraform の変�
 
 | ワークフロー | トリガー | 内容 |
 |-------------|---------|------|
-| `plan.yml` | PR to `main` (opened / synchronize / reopened / labeled) | 変更対象検出 → validate + plan → PR コメント → ラベル付き PR は自動マージ |
-| `apply.yml` | push to `main` | 変更対象検出 → destroy (削除分) → apply (変更分) |
+| `plan.yml` | PR to `main` (opened / synchronize / reopened / labeled) | 変更対象検出 → validate + plan (変更分) / plan -destroy (削除分) → apply → summary → ラベル付き PR は自動マージ |
 
 ### 変更対象の検出 (ラベルベース)
 

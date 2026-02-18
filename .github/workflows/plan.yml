@@ -328,8 +328,8 @@ jobs:
         run: |
           results=("${{ needs.detect-targets.result }}" "${{ needs.plan.result }}" "${{ needs.plan-destroy.result }}" "${{ needs.apply.result }}" "${{ needs.apply-destroy.result }}")
           for result in "${results[@]}"; do
-            if [[ "${result}" == "failure" ]]; then
-              echo "::error::One or more jobs failed"
+            if [[ "${result}" == "failure" || "${result}" == "cancelled" ]]; then
+              echo "::error::One or more jobs failed or were cancelled"
               exit 1
             fi
           done

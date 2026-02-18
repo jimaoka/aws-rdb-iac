@@ -24,6 +24,9 @@ jobs:
       has_deleted: ${{ steps.labels.outputs.has_deleted }}
       is_labeled: ${{ steps.labels.outputs.has_labels }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Cancel older duplicate runs
         env:
           GH_TOKEN: ${{ github.token }}
@@ -38,9 +41,6 @@ jobs:
             echo "Cancelling older duplicate run ${RUN_ID}"
             gh run cancel "${RUN_ID}" --repo "${{ github.repository }}" || true
           done
-
-      - name: Checkout
-        uses: actions/checkout@v4
 
       - name: Parse PR labels
         id: labels
@@ -321,7 +321,7 @@ jobs:
 
   summary:
     needs: [detect-targets, plan, plan-destroy, apply, apply-destroy]
-    if: always()
+    if: "!cancelled()"
     runs-on: ubuntu-latest
     steps:
       - name: Check job results
@@ -347,7 +347,7 @@ jobs:
   delete-branch:
     needs: [detect-targets, summary]
     if: >-
-      always() &&
+      !cancelled() &&
       needs.summary.result == 'success' &&
       needs.detect-targets.outputs.is_labeled == 'true'
     runs-on: ubuntu-latest

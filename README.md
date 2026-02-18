@@ -256,7 +256,7 @@ GitHub Actions による PR ベースのワークフローで Terraform の変�
 
 | ワークフロー | トリガー | 内容 |
 |-------------|---------|------|
-| `plan.yml` | PR to `main` (opened, synchronize, reopened, labeled) | 変更対象検出 → validate + plan (変更分) / plan -destroy (削除分) → apply (変更分) / destroy (削除分) → summary → auto-merge（ラベル付き PR は自動マージ） |
+| `plan.yml` | PR to `main` (opened, synchronize, reopened, auto_merge_enabled) | 変更対象検出 → validate + plan (変更分) / plan -destroy (削除分) → apply (変更分) / destroy (削除分) → summary → auto-merge（ラベル付き PR は自動マージ） |
 
 ### 変更対象の検出 (ラベルベース)
 

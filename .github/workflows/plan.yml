@@ -3,7 +3,7 @@ name: Terraform Plan
 on:
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened, auto_merge_enabled]
 
 concurrency:
   group: terraform-${{ github.event.pull_request.number }}
@@ -322,6 +322,7 @@ jobs:
 
   auto-merge:
     needs: [detect-targets, summary]
+    if: needs.summary.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Auto-merge

@@ -320,15 +320,8 @@ jobs:
           done
           echo "All jobs passed successfully"
 
-  auto-merge:
-    needs: [detect-targets, summary]
-    if: >-
-      always() &&
-      needs.summary.result == 'success' &&
-      needs.detect-targets.outputs.is_labeled == 'true'
-    runs-on: ubuntu-latest
-    steps:
       - name: Auto-merge
+        if: needs.detect-targets.outputs.is_labeled == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

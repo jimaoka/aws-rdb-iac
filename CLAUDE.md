@@ -64,7 +64,7 @@ DB サブネットグループは network-tf リポジトリで管理されて�
 
 ## CI/CD ワークフロー
 
-- **plan.yml** (PR 時): 変更対象検出 → `terragrunt validate` + `terragrunt plan` / `plan -destroy` → ラベル付き PR は `terragrunt apply` / `terragrunt destroy` → `summary` → 自動マージ
+- **plan.yml** (PR 時): 変更対象検出 → `terragrunt validate` + `terragrunt plan` / `plan -destroy` → ラベル付き PR は `terragrunt apply` / `terragrunt destroy` → `summary`（ラベル付き PR は自動マージ）
 - AWS 認証: OIDC (`vars.AWS_ROLE_ARN`)
 
 ### 変更対象の検出 (ラベルベース)

@@ -7,7 +7,7 @@ on:
 
 concurrency:
   group: terraform-${{ github.event.pull_request.number }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   id-token: write
@@ -334,4 +334,4 @@ jobs:
         run: |
           gh pr merge ${{ github.event.pull_request.number }} \
             --repo ${{ github.repository }} \
-            --squash --delete-branch
+            --squash --auto --delete-branch

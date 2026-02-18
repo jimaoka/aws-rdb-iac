@@ -271,7 +271,7 @@ PR に以下のラベルが両方付与されている場合のみ、ラベル�
 
 ### 自動マージ
 
-`type:*` と `cluster:*` ラベルが付いた PR は、すべてのチェック（plan → apply / destroy）が成功した後に `gh pr merge --squash --auto` で自動マージされる。ラベルなしの PR は plan / apply / destroy / 自動マージいずれも実行されない。
+`type:*` と `cluster:*` ラベルが付いた PR は、すべてのチェック（plan → apply / destroy）が成功した後に `gh pr merge --squash --auto --delete-branch` で自動マージ・ブランチ削除される。ラベルなしの PR は plan / apply / destroy / 自動マージいずれも実行されない。
 
 **リポジトリ設定の前提条件:**
 

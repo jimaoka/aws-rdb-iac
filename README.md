@@ -256,7 +256,7 @@ GitHub Actions による PR ベースのワークフローで Terraform の変�
 
 | ワークフロー | トリガー | 内容 |
 |-------------|---------|------|
-| `plan.yml` | PR to `main` (labeled) | 変更対象検出 → validate + plan (変更分) / plan -destroy (削除分) → apply (変更分) / destroy (削除分) → summary（ラベル付き PR は自動マージ） |
+| `plan.yml` | PR to `main` (opened, synchronize, reopened, labeled) | 変更対象検出 → validate + plan (変更分) / plan -destroy (削除分) → apply (変更分) / destroy (削除分) → summary → auto-merge（ラベル付き PR は自動マージ） |
 
 ### 変更対象の検出 (ラベルベース)
 
@@ -271,12 +271,7 @@ PR に以下のラベルが両方付与されている場合のみ、ラベル�
 
 ### 自動マージ
 
-`type:*` と `cluster:*` ラベルが付いた PR は、すべてのチェック（plan → apply / destroy）が成功した後に `gh pr merge --squash --auto --delete-branch` で自動マージされ、マージ完了時にブランチも自動削除される。ラベルなしの PR は plan / apply / destroy / 自動マージいずれも実行されない。
-
-**リポジトリ設定の前提条件:**
-
-- リポジトリ設定で **"Allow auto-merge"** を有効にする
-- ブランチ保護ルールで `summary` ジョブを required status check に設定する
+`type:*` と `cluster:*` ラベルが付いた PR は、`summary` ジョブ成功後に独立した `auto-merge` ジョブが `gh pr merge --squash --delete-branch` で即時マージし、ブランチも自動削除される。ラベルなしの PR は plan / apply / destroy / 自動マージいずれも実行されない。
 
 ### AWS 認証
 

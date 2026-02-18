@@ -64,7 +64,7 @@ DB サブネットグループは network-tf リポジトリで管理されて�
 
 ## CI/CD ワークフロー
 
-- **plan.yml** (PR 時): 変更対象検出 → `terragrunt validate` + `terragrunt plan` / `plan -destroy` → ラベル付き PR は `terragrunt apply` / `terragrunt destroy` → `summary`（ラベル付き PR は自動マージ）
+- **plan.yml** (PR 時): 変更対象検出 → `terragrunt validate` + `terragrunt plan` / `plan -destroy` → ラベル付き PR は `terragrunt apply` / `terragrunt destroy` → `summary` → `auto-merge`（ラベル付き PR は自動マージ）
 - AWS 認証: OIDC (`vars.AWS_ROLE_ARN`)
 
 ### 変更対象の検出 (ラベルベース)
@@ -74,9 +74,8 @@ DB サブネットグループは network-tf リポジトリで管理されて�
 
 ### 自動マージ
 
-- `type:*` + `cluster:*` ラベルが付いた PR は、plan → apply (または plan-destroy → destroy) 成功後に `gh pr merge --squash --auto --delete-branch` で自動マージされ、マージ完了時にブランチも自動削除される
+- `type:*` + `cluster:*` ラベルが付いた PR は、`summary` ジョブ成功後に独立した `auto-merge` ジョブが `gh pr merge --squash --delete-branch` で即時マージし、ブランチも自動削除される
 - ラベルなし PR は plan / apply / destroy / 自動マージいずれも実行されない
-- 前提: リポジトリ設定で **"Allow auto-merge"** を有効にし、ブランチ保護ルールで `summary` を required status check に設定する
 
 ## 検証コマンド
 

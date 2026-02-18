@@ -3,7 +3,7 @@ name: Terraform Plan
 on:
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened, auto_merge_enabled]
+    types: [opened, synchronize, reopened]
 
 concurrency:
   group: terraform-${{ github.event.pull_request.number }}
@@ -26,6 +26,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Sleep 5s
+        run: sleep 5
 
       - name: Parse PR labels
         id: labels

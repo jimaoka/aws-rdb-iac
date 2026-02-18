@@ -267,14 +267,51 @@ jobs:
         working-directory: ${{ matrix.dir }}
         run: terragrunt apply --terragrunt-non-interactive -auto-approve -input=false
 
+  apply-destroy:
+    needs: [detect-targets, plan-destroy]
+    if: >-
+      needs.plan-destroy.result == 'success' &&
+      needs.detect-targets.outputs.is_labeled == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        dir: ${{ fromJson(needs.detect-targets.outputs.deleted) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restore deleted directory
+        run: git checkout "${{ github.event.pull_request.base.sha }}" -- "${{ matrix.dir }}/"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ap-northeast-1
+
+      - name: Setup Terragrunt
+        uses: ./.github/actions/setup-terragrunt
+
+      - name: Terragrunt Init
+        working-directory: ${{ matrix.dir }}
+        run: terragrunt init --terragrunt-non-interactive -input=false
+
+      - name: Terragrunt Destroy
+        working-directory: ${{ matrix.dir }}
+        run: terragrunt destroy --terragrunt-non-interactive -auto-approve -input=false
+
   summary:
-    needs: [detect-targets, plan, plan-destroy, apply]
+    needs: [detect-targets, plan, plan-destroy, apply, apply-destroy]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Check job results
         run: |
-          results=("${{ needs.detect-targets.result }}" "${{ needs.plan.result }}" "${{ needs.plan-destroy.result }}" "${{ needs.apply.result }}")
+          results=("${{ needs.detect-targets.result }}" "${{ needs.plan.result }}" "${{ needs.plan-destroy.result }}" "${{ needs.apply.result }}" "${{ needs.apply-destroy.result }}")
           for result in "${results[@]}"; do
             if [[ "${result}" == "failure" ]]; then
               echo "::error::One or more jobs failed"
